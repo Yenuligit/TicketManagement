@@ -1,45 +1,84 @@
 package com.example.ticketmanagementsystem.Model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "ticket_pools")
-@Data
 public class TicketPool {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Ticket> tickets = new ArrayList<>();
-
     private int maxCapacity;
 
-    public TicketPool() {}
+    @OneToMany(mappedBy = "ticketPool", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Ticket> tickets = new ArrayList<>();
 
+    // Default constructor (needed for JPA)
+    public TicketPool() {
+        this.maxCapacity = 0; // Ensure it is initialized to avoid "not initialized" error
+    }
+
+    // Custom constructor for custom pool creation
     public TicketPool(int maxCapacity) {
+        if (maxCapacity <= 0) {
+            throw new IllegalArgumentException("maxCapacity must be greater than 0");
+        }
         this.maxCapacity = maxCapacity;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public int getMaxCapacity() {
+        return maxCapacity;
+    }
+
+    public void setMaxCapacity(int maxCapacity) {
+        if (maxCapacity <= 0) {
+            throw new IllegalArgumentException("maxCapacity must be greater than 0");
+        }
+        this.maxCapacity = maxCapacity;
+    }
+
+    public List<Ticket> getTickets() {
+        return tickets;
+    }
+
+    public void setTickets(List<Ticket> tickets) {
+        this.tickets = tickets;
     }
 
     public synchronized void addTicket(Ticket ticket) {
         if (tickets.size() < maxCapacity) {
             tickets.add(ticket);
-            notifyAll(); // Notify waiting customers that a ticket has been added.
+            ticket.setTicketPool(this);
+        } else {
+            throw new IllegalStateException("Ticket pool is full.");
         }
     }
 
     public synchronized Ticket buyTicket() {
-        while (tickets.isEmpty()) {
-            try {
-                wait(); // Wait until a ticket is available.
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+        if (!tickets.isEmpty()) {
+            return tickets.remove(0);
         }
-        return tickets.remove(0); // Remove and return the first ticket.
+        throw new IllegalStateException("No tickets available.");
+    }
+
+
+    public synchronized int getTicketsAvailable() {
+        return tickets.size();
+    }
+
+    @Override
+    public String toString() {
+        return "TicketPool{" +
+                "id=" + id +
+                ", maxCapacity=" + maxCapacity +
+                ", tickets=" + tickets.size() +
+                '}';
     }
 }

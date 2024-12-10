@@ -5,22 +5,23 @@ import com.example.ticketmanagementsystem.Repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class TicketService {
 
     @Autowired
     private TicketRepository ticketRepository;
 
-    public void addTicket(Ticket ticket) {
-        ticketRepository.save(ticket);
+    public Ticket saveTicket(Ticket ticket) {
+        return ticketRepository.save(ticket);
     }
 
-    public Ticket buyTicket(Long id) {
-        Ticket ticket = ticketRepository.findById(id).orElse(null);
-        if (ticket != null) {
-            ticketRepository.delete(ticket);
-            return ticket; // Return purchased ticket details.
-        }
-        return null; // Handle case where ticket is not found.
+    public void deleteTicket(Long id) {
+        ticketRepository.deleteById(id);
+    }
+
+    public List<Ticket> getAllTickets() {
+        return List.of();
     }
 }
